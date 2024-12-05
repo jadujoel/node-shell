@@ -4,7 +4,7 @@
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "scripts": {
     "build": "tsc --build",
     "test": "tsc --build && node dist/test.js",
@@ -17,8 +17,7 @@
   "peerDependencies": {
     "typescript": "^5.0.0"
   },
-  "dependencies": {
-  },
+  "dependencies": {},
   "include": [
     "src/*",
     "dist/*",
