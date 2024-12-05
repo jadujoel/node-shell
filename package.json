@@ -7,7 +7,8 @@
   "version": "0.0.1",
   "scripts": {
     "build": "tsc --build",
-    "test": "tsc --build && node dist/test.js"
+    "test": "tsc --build && node dist/test.js",
+    "clean": "rm -rf dist tsconfig.tsbuildinfo"
   },
   "devDependencies": {
     "@types/bun": "latest",
