@@ -8,116 +8,119 @@ export function $(strings: TemplateStringsArray, ...keys: string[]) {
   }, ''))
 }
 
+export function run(command: string): ShellPromise {
+  return ShellPromise.FromCommand(command)
+}
 
-/**
- * @param {string} command
- * @returns {Promise<>}
- */
-export function run(command: string) {
-  const state = {
-    quiet: false,
-    nothrow: false,
-    closed: false
+interface ShellPromiseState {
+  quiet: boolean
+  nothrow: boolean
+  closed: boolean
+}
+
+class ShellPromise {
+  #promise: Promise<ShellOutput> | undefined
+  constructor(private command: string, private state: ShellPromiseState) { }
+  static FromCommand(command: string) {
+    return new ShellPromise(command, { quiet: false, nothrow: false, closed: false })
   }
-  const result = {
-      success: true,
-      stdout: "",
-      stderr: ""
+  get promise(): Promise<ShellOutput> {
+    return this.#promise ?? createPromise(this.state, this.command)
   }
-  const createPromise = () => new Promise((resolve, reject) => {
-    const child = childProcess.exec(command)
-    child.stdout?.on('data', (data) => {
-      const str = data.toString()
-      result.stdout += str
-      if (!state.quiet) {
-        process.stdout.write(str)
-      }
-    })
-    child.stderr?.on('data', (data) => {
-      const str = data.toString()
-      result.stderr += str
-      if (!state.quiet) {
-        process.stderr.write(str)
-      }
-    });
-    child.on('error', (err) => {
-      console.log(`CHILD ERROR: ${err}`)
-      const str = err.toString()
-      result.stderr += str
+  quiet(): this {
+    this.state.quiet = true
+    return this
+  }
+  nothrow(): this {
+    this.state.nothrow = true
+    return this
+  }
+  env(env: Record<string, string>) {
+    Object.assign(process.env, env)
+    return this
+  }
+  async text(): Promise<string> {
+      return this.promise.then((p) => p.stdout)
+  }
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  async json<T = any>(): Promise<T> {
+      return this.promise.then((p) => JSON.parse(p.stdout))
+  }
+  async toString (): Promise<string> {
+    return this.promise.then((p) => p.stdout)
+  }
+  async arrayBuffer (): Promise<ArrayBuffer> {
+    return this.promise.then((p) => Buffer.from(p.stdout).buffer as ArrayBuffer)
+  }
+}
+
+const createPromise = (state: ShellPromiseState, command: string) => new Promise<ShellOutput>((resolve, reject) => {
+  const result: ShellOutput = {
+    stdout: "",
+    stderr: "",
+    success: true
+  }
+  const child = childProcess.exec(command)
+  child.stdout?.on('data', (data) => {
+    const str = data.toString()
+    result.stdout += str
+    if (!state.quiet) {
+      process.stdout.write(str)
+    }
+  })
+  child.stderr?.on('data', (data) => {
+    const str = data.toString()
+    result.stderr += str
+    if (!state.quiet) {
+      process.stderr.write(str)
+    }
+  });
+  child.on('error', (err) => {
+    console.log("Error", err)
+    if (state.closed) {
+      return
+    }
+    state.closed = true
+    result.success = false
+    if (!state.quiet) {
+      console.error(err)
+    }
+    if (state.nothrow) {
+      resolve(result)
+    } else {
+      reject(err)
+    }
+  })
+  child.stdout?.on('close', () => {
+    if (state.closed) {
+      return
+    }
+    state.closed = true
+    if (child.exitCode === 0) {
+      resolve(result)
+    } else {
       result.success = false
-      if (!state.quiet) {
-        process.stderr.write(str)
-      }
       if (state.nothrow) {
         resolve(result)
       } else {
-        throw err
+        reject(new Error(result.stderr))
       }
-    })
-    child.stdout?.on('close', () => {
-      if (state.closed) {
-        return
-      }
-      state.closed = true
-      if (child.exitCode === 0) {
-        resolve(result)
-      } else {
-        result.success = false
-        if (state.nothrow) {
-          resolve(result)
-        } else {
-          reject(new Error(result.stderr))
-        }
-      }
-    })
-    child.stderr?.on('close', () => {
-      if (state.closed) {
-        return
-      }
-      state.closed = true
-      if (child.exitCode === 0 || result.stderr === "") {
-        resolve(result)
-      } else {
-        result.success = false
-        if (state.nothrow) {
-          resolve(result)
-        } else {
-          reject(new Error(result.stderr))
-        }
-      }
-    })
+    }
   })
-  return new class ShellPromise {
-    #promise: Promise<ShellOutput> | undefined
-    get promise() {
-        return this.#promise ?? createPromise()
+  child.stderr?.on('close', () => {
+    if (state.closed) {
+      return
     }
-    quiet() {
-        state.quiet = true
-        return this
+    state.closed = true
+    if (child.exitCode === 0 || result.stderr === "") {
+      resolve(result)
+    } else {
+      result.success = false
+      if (state.nothrow) {
+        resolve(result)
+      } else {
+        reject(new Error(result.stderr))
+      }
     }
-    nothrow() {
-        state.nothrow = true
-        return this
-    }
-    env(env: Record<string, string>) {
-      Object.assign(process.env, env)
-      return this
-    }
-    async text() {
-        return this.promise.then(() => result.stdout)
-    }
-    async json() {
-        return this.promise.then(() => JSON.parse(result.stdout))
-    }
-    async toString () {
-      return this.promise.then(() => result.stdout)
-    }
-    async arrayBuffer () {
-      return this.promise.then(() => Buffer.from(result.stdout).buffer as ArrayBuffer)
-    }
-    async blob () {
-      return this.promise.then(() => new Blob([Buffer.from(result.stdout).buffer as ArrayBuffer]))
-    }
-  }
-}
+  })
+})

@@ -19,7 +19,7 @@ import { $ } from './index.ts';
 }
 {
   // should fail loudly
-  let result = undefined
+  let result: string | undefined = undefined
   try {
     result = await $`fail`.quiet().text()
     assert.equal("THIS LINE SHOULD NOT BE REACHED", "")
@@ -39,12 +39,5 @@ import { $ } from './index.ts';
   // should return array buffer
   const buffer = await $`echo hello`.quiet().arrayBuffer()
   assert.equal(buffer.constructor.name, 'ArrayBuffer')
-  // assert.equal(Buffer.from(buffer).toString(), 'hello\n')
   console.log("Success 5")
 }
-{
-  // should return blob
-  const blob = await $`echo hello`.quiet().blob()
-  assert.equal(blob.constructor.name, 'Blob')
-}
-

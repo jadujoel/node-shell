@@ -88,15 +88,6 @@ const buffer = await $`echo Hello`.quiet().arrayBuffer();
 console.log(buffer.constructor.name); // Output: ArrayBuffer
 ```
 
-#### Blob
-
-Capture the output of a command as a `Blob` (useful in browser-like environments):
-
-```typescript
-const blob = await $`echo Hello`.quiet().blob();
-console.log(blob.constructor.name); // Output: Blob
-```
-
 ### Piping Output
 
 Suppress stdout and stderr by using `.quiet()`:
@@ -122,8 +113,6 @@ const result = await $`ls -l`.text();
 - **`text()`**: Resolves with the command's stdout as a string.
 - **`json()`**: Resolves with the command's stdout parsed as JSON.
 - **`arrayBuffer()`**: Resolves with the command's stdout as an `ArrayBuffer`.
-- **`blob()`**: Resolves with the command's stdout as a `Blob`.
 - **`env(env: Record<string, string>)`**: Sets environment variables for the command.
 - **`quiet()`**: Suppresses stdout and stderr output.
 - **`nothrow()`**: Prevents errors from being thrown when the command fails.
-

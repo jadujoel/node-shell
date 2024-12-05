@@ -6,7 +6,7 @@
   "types": "index.d.ts",
   "version": "0.0.1",
   "scripts": {
-    "build": "bun build.ts && tsc --build index.ts --declaration-only",
+    "build": "tsc --build",
     "test": "bun build.ts && node test.js"
   },
   "devDependencies": {
