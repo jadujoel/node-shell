@@ -44,3 +44,9 @@ import { $ } from './index.js';
   assert.equal(buffer.constructor.name, 'ArrayBuffer')
   console.log("Success 5")
 }
+{
+  // should be possible to await directly
+  const output = await $`echo hello`.quiet()
+  assert.equal(output.stdout, 'hello\n')
+  console.log("Success 6")
+}
