@@ -178,5 +178,3 @@ dist
 
 bun.lockb
 package-lock.json
-*.d.ts
-*.d.ts.map

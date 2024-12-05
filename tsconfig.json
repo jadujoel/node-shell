@@ -11,6 +11,7 @@
     "jsx": "react-jsx",
     "allowJs": true,
     "rootDir": "src",
+    "sourceMap": true,
     "outDir": "dist",
     // Bundler mode
     "moduleResolution": "bundler",

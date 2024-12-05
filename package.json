@@ -20,8 +20,8 @@
   "dependencies": {
   },
   "include": [
-    "src",
-    "dist",
+    "src/*",
+    "dist/*",
     "tsconfig.json",
     "README.md"
   ]
