@@ -24,7 +24,10 @@ import { $ } from './index.js';
     result = await $`fail`.quiet().text()
     assert.equal("THIS LINE SHOULD NOT BE REACHED", "")
   } catch (e) {
-    assert.equal((e as Error).message, '/bin/sh: fail: command not found\n')
+    const expected1 = '/bin/sh: fail: command not found\n'
+    const expected2 = '/bin/sh: 1: fail: not found\n'
+    const msg = (e as Error).message
+    assert.equal(msg === expected1 || msg === expected2, true)
     assert.equal(result, undefined)
   }
   console.log("Success 3")
