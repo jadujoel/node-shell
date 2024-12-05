@@ -2,12 +2,12 @@
   "name": "@jadujoel/node-shell",
   "module": "index.ts",
   "type": "module",
-  "main": "index.js",
-  "types": "index.d.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "version": "0.0.1",
   "scripts": {
     "build": "tsc --build",
-    "test": "tsc --build && node test.js"
+    "test": "tsc --build && node dist/test.js"
   },
   "devDependencies": {
     "@types/bun": "latest",
@@ -17,5 +17,11 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
-  }
+  },
+  "include": [
+    "src",
+    "dist",
+    "tsconfig.json",
+    "README.md"
+  ]
 }

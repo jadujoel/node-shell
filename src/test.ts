@@ -1,5 +1,5 @@
 import * as assert from 'node:assert';
-import { $ } from './index.ts';
+import { $ } from './index.js';
 
 {
   // should echo hello world
