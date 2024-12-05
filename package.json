@@ -1,0 +1,21 @@
+{
+  "name": "@jadujoel/node-shell",
+  "module": "index.ts",
+  "type": "module",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "version": "0.0.1",
+  "scripts": {
+    "build": "bun build.ts && tsc --build index.ts --declaration-only",
+    "test": "bun build.ts && node test.js"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@biomejs/biome": "1.9.4"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+  }
+}
