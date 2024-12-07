@@ -74,12 +74,12 @@ test.it('should timeout', async () => {
     assert.equal((e as Error).message, 'Command failed with code 1');
     assert.equal(result, undefined);
   }
-})
+});
 
 test.it('should not timeout', async () => {
   const result = await $`sleep 0.1`.timeout(200).quiet().text();
   assert.equal(typeof result, "string");
-})
+});
 
 test.it('should return toString', async () => {
   const output = await $`echo hello`.quiet().toString();
@@ -226,8 +226,6 @@ test.it('should trigger console.error and resolve(final) in onError', async () =
   // And by not using quiet, we covered console.error(err).
 });
 
-// Note: Don't call .quiet() here, and do call .nothrow().
-// This ensures console.error(err) and resolve(final) will run.
 test.it('should trigger onError with console.error and resolve(final)', async () => {
   const output = await $`echo hello`
     .shell('/nonexistent-shell-xyz') // A shell that does not exist
@@ -235,4 +233,80 @@ test.it('should trigger onError with console.error and resolve(final)', async ()
 
   assert.equal(output.success, false, 'Should not succeed');
   assert.equal(output.exitCode, 1, 'Exit code should be 1');
+});
+
+test.it('should write to stdin and get the output', async () => {
+  const proc = $`cat`.nothrow().quiet();
+  proc.stdin.write("Hello from stdin!\n");
+  proc.stdin.end();
+
+  const result = await proc;
+  assert.equal(result.text(), "Hello from stdin!\n");
+});
+
+test.it('should handle multiple writes to stdin', async () => {
+  const proc = $`cat`.nothrow().quiet();
+  proc.stdin.write("Line 1\n");
+  proc.stdin.write("Line 2\n");
+  proc.stdin.end();
+
+  const result = await proc;
+  const text = result.text();
+  assert.ok(text.includes("Line 1"), "Expected 'Line 1' in output");
+  assert.ok(text.includes("Line 2"), "Expected 'Line 2' in output");
+});
+
+test.it('should handle empty stdin', async () => {
+  const proc = $`cat`.nothrow().quiet();
+  proc.stdin.end();
+
+  const result = await proc;
+  assert.equal(result.text(), "", "Expected empty output from cat with empty stdin");
+});
+
+test.it('should interact with stdin before reading output', async () => {
+  // This test uses grep to filter lines passed to stdin.
+  const proc = $`grep hello`.nothrow().quiet();
+  proc.stdin.write("hello world\n");
+  proc.stdin.write("this line does not match\n");
+  proc.stdin.write("another hello line\n");
+  proc.stdin.end();
+
+  const result = await proc;
+  const output = result.text();
+  // grep filters lines containing "hello"
+  assert.ok(output.includes("hello world\n"), "Expected 'hello world' line to be present");
+  assert.ok(output.includes("another hello line\n"), "Expected 'another hello line' to be present");
+  assert.ok(!output.includes("this line does not match"), "Non-matching line should not appear");
+});
+
+test.it('should handle large input from stdin', async () => {
+  // Test a large input by repeating a line multiple times
+  const largeInput = "data\n".repeat(1000);
+  const proc = $`cat`.nothrow().quiet();
+  proc.stdin.write(largeInput);
+  proc.stdin.end();
+
+  const result = await proc;
+  assert.equal(result.text(), largeInput, "Expected output to match the large input sent to stdin");
+});
+
+test.it('should allow writing to stdin before awaiting', async () => {
+  // Ensure we can write to stdin right after creating the process, before await
+  const proc = $`cat`.nothrow().quiet();
+  proc.stdin.write("Immediate write\n");
+  proc.stdin.end();
+  const result = await proc;
+  assert.equal(result.text(), "Immediate write\n");
+});
+
+test.it('should verify stdin is accessible from ShellPromise', async () => {
+  // Here we explicitly test that `.stdin` on ShellPromise works as intended.
+  const proc = $`cat`.nothrow().quiet();
+  assert.ok(proc.stdin, "Expected stdin to be accessible from ShellPromise");
+  proc.stdin.write("From ShellPromise stdin\n");
+  proc.stdin.end();
+
+  const result = await proc;
+  assert.equal(result.text(), "From ShellPromise stdin\n");
 });
