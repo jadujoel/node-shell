@@ -1,4 +1,3 @@
-```markdown
 # Node Shell
 
 A lightweight and flexible shell execution library for Node.js that enables running shell commands with a clean and extensible API. This library provides a powerful `$` template function for executing commands, as well as methods to control command execution, parse output in various formats, handle errors gracefully, and even stream input and output.
@@ -189,4 +188,3 @@ console.log(result);
 ## Contributing
 
 Contributions are welcome! Feel free to open issues or pull requests if you have improvements or find bugs.
-
