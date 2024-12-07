@@ -1,10 +1,27 @@
-import * as childProcess from "node:child_process";
-import type { Writable } from "node:stream";
 // index.ts
-import type Bun from "bun";
+
+import type Bun from 'bun';
+import * as childProcess from "node:child_process";
+import type { Writable } from 'node:stream';
 import jsonc from "jsonc-parser";
 
-class ShellOutput implements Bun.ShellOutput {
+export type JSONObject = { [key: string]: JSONValue };
+export type JSONArray = JSONValue[];
+export type JSONValue = string | number | boolean | null | JSONObject | JSONArray;
+
+export interface ShellPromiseState {
+	shell?: string;
+	cwd?: string;
+	env?: Record<string, string>;
+	timeout?: number;
+	quiet: boolean;
+	nothrow: boolean;
+	closed: boolean;
+	childStdin?: Writable;
+	childStdout?: NodeJS.ReadableStream;
+}
+
+export class ShellOutput implements Bun.ShellOutput {
 	constructor(
 		public stdout: Buffer,
 		public stderr: Buffer,
@@ -132,26 +149,11 @@ export function $(strings: TemplateStringsArray, ...keys: string[]) {
 	return run(cmd);
 }
 
-type JSONObject = { [key: string]: JSONValue };
-type JSONArray = JSONValue[];
-type JSONValue = string | number | boolean | null | JSONObject | JSONArray;
-
 export function run(command: string): ShellPromise {
 	return ShellPromise.FromCommand(command);
 }
 
-interface ShellPromiseState {
-	shell?: string;
-	cwd?: string;
-	env?: Record<string, string>;
-	timeout?: number;
-	quiet: boolean;
-	nothrow: boolean;
-	closed: boolean;
-	childStdin?: Writable;
-}
-
-class ShellPromise {
+export class ShellPromise {
 	#promise: Promise<ShellOutput> | undefined;
 
 	constructor(
@@ -303,6 +305,7 @@ class ShellPromise {
 	 * ```
 	 */
 	async text(): Promise<string> {
+		this.quiet();
 		return this.promise.then((p) => p.stdout.toString());
 	}
 
@@ -310,15 +313,37 @@ class ShellPromise {
 	 * Read from stdout as a string, line by line
 	 *
 	 * Automatically calls {@link quiet} to disable echoing to stdout.
+	 * This yields lines as they arrive from the process, without waiting for it to finish.
 	 */
 	lines(): AsyncIterable<string> {
-		return (async function* (promise: Promise<ShellOutput>) {
-			const output = await promise;
-			const lines = output.stdout.toString().split("\n");
-			for (const line of lines) {
-				yield line;
+		this.quiet();
+		// Ensure the process is started
+		if (!this.#promise) {
+			void this.promise;
+		}
+
+		const stream = this.state.childStdout;
+		if (!stream) {
+			// If no stdout is available yet, throw an error
+			throw new Error("stdout is not available");
+		}
+
+		const lineGenerator = async function* (inputStream: NodeJS.ReadableStream) {
+			let buffer = '';
+			for await (const chunk of inputStream) {
+				buffer += chunk.toString();
+				const lines = buffer.split('\n');
+				buffer = lines.pop() ?? ""; // last element might be incomplete line
+				for (const line of lines) {
+					yield line;
+				}
 			}
-		})(this.promise);
+			if (buffer.length > 0) {
+				yield buffer;
+			}
+		};
+
+		return lineGenerator(stream);
 	}
 
 	/**
@@ -336,10 +361,12 @@ class ShellPromise {
 	 *
 	 */
 	async json<T = JSONValue>(): Promise<T | undefined> {
+		this.quiet();
 		return this.promise.then((p) => p.json());
 	}
 
 	async toString(): Promise<string> {
+		this.quiet();
 		return this.promise.then((p) => p.text());
 	}
 
@@ -356,6 +383,7 @@ class ShellPromise {
 	 * ```
 	 */
 	async arrayBuffer(): Promise<ArrayBuffer> {
+		this.quiet();
 		return this.promise.then((p) => p.arrayBuffer());
 	}
 
@@ -371,11 +399,12 @@ class ShellPromise {
 	 * ```
 	 */
 	async blob(): Promise<Blob> {
+		this.quiet();
 		return this.promise.then((p) => p.blob());
 	}
 }
 
-function createPromise(state: ShellPromiseState, command: string) {
+export function createPromise(state: ShellPromiseState, command: string) {
 	return new Promise<ShellOutput>((resolve, reject) => {
 		const stdout: Uint8Array[] = [];
 		const stderr: Uint8Array[] = [];
@@ -393,8 +422,9 @@ function createPromise(state: ShellPromiseState, command: string) {
 			stdio: ["pipe", "pipe", "pipe"],
 		});
 
-		// Store child's stdin so we can provide it via ShellPromise and ShellOutput
+		// Store child's stdin and stdout so we can provide them via ShellPromise and ShellOutput
 		state.childStdin = child.stdin;
+		state.childStdout = child.stdout;
 
 		const onError = (err: string | Error) => {
 			if (state.closed) return;
@@ -457,7 +487,9 @@ function createPromise(state: ShellPromiseState, command: string) {
 			}
 		});
 
-		child.on("disconnect", () => onError("Disconnected"));
+		child.on('disconnect', () => onError("Disconnected"));
 		child.on("error", (err) => onError(err));
 	});
 }
+
+export default $

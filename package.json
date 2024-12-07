@@ -4,7 +4,7 @@
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "scripts": {
     "build": "tsc --build && bun build dist/index.js --outfile dist/index.min.js --minify --sourcemap=none --target node",
     "test": "bun run build && npx c8 --reporter=lcov --reporter=text node --test dist/index.test.js",
