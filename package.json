@@ -4,20 +4,23 @@
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "scripts": {
     "build": "tsc --build",
-    "test": "tsc --build && node dist/test.js",
+    "test": "tsc --build && npx c8 --reporter=lcov --reporter=text node --test dist/index.test.js",
     "clean": "rm -rf dist tsconfig.tsbuildinfo"
   },
   "devDependencies": {
+    "@biomejs/biome": "1.9.4",
     "@types/bun": "latest",
-    "@biomejs/biome": "1.9.4"
+    "c8": "10.1.2"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
   },
-  "dependencies": {},
+  "c8": {
+    "exclude": ["dist/*.test.js"]
+  },
   "include": [
     "src/*",
     "dist/*",

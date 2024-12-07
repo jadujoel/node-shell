@@ -37,7 +37,7 @@
   },
   "include": [
     "src/index.ts",
-    "src/test.ts"
+    "src/index.test.ts"
   ],
   "exclude": []
 }
