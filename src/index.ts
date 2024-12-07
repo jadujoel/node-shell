@@ -11,24 +11,94 @@ class ShellOutput implements Bun.ShellOutput {
     public success = exitCode === 0,
   ) {}
 
+	get stdin(): WritableStream {
+		throw new Error("Not implemented");
+	}
+
+	/**
+	 * Read from stdout as an ArrayBuffer
+	 *
+	 * @returns Stdout as an ArrayBuffer
+	 * @example
+	 *
+	 * ```ts
+	 * const output = await $`echo hello`;
+	 * console.log(output.arrayBuffer()); // ArrayBuffer { byteLength: 6 }
+	 * ```
+	 */
   arrayBuffer(): ArrayBuffer {
     return this.stdout.buffer as ArrayBuffer;
   }
 
+	/**
+	 * Read from stdout as a string
+	 *
+	 * @param encoding - The encoding to use when decoding the output
+	 * @returns Stdout as a string with the given encoding
+	 * @example
+	 *
+	 * ## Read as UTF-8 string
+	 *
+	 * ```ts
+	 * const output = await $`echo hello`;
+	 * console.log(output.text()); // "hello\n"
+	 * ```
+	 *
+	 * ## Read as base64 string
+	 *
+	 * ```ts
+	 * const output = await $`echo ${atob("hello")}`;
+	 * console.log(output.text("base64")); // "hello\n"
+	 * ```
+	 *
+	 */
   text(): string {
     return this.stdout.toString();
   }
 
+	/**
+	 * Read from stdout as a Blob
+	 *
+	 * @returns Stdout as a blob
+	 * @example
+	 * ```ts
+	 * const output = await $`echo hello`;
+	 * console.log(output.blob()); // Blob { size: 6, type: "" }
+	 * ```
+	 */
   blob(): Blob {
     return new Blob([this.stdout]);
   }
 
+	/**
+	 * Read from stdout as an Uint8Array
+	 *
+	 * @returns Stdout as an Uint8Array
+	 * @example
+	 *
+	 * ```ts
+	 * const output = await $`echo hello`;
+	 * console.log(output.bytes()); // Uint8Array { byteLength: 6 }
+	 * ```
+	 */
   bytes(): Uint8Array {
     return this.stdout as unknown as Uint8Array;
   }
 
+	/**
+	 * Read from stdout as a JSON object
+	 *
+	 * @returns Stdout as a JSON object
+	 * @example
+	 *
+	 * ```ts
+	 * const output = await $`echo '{"hello": 123}'`;
+	 * console.log(output.json()); // { hello: 123 }
+	 * ```
+	 *
+	 */
   // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    json<T = any>(): T {
+	json<T = any>(): T {
     return JSON.parse(this.stdout.toString());
   }
 }
