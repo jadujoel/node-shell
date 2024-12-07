@@ -57,7 +57,8 @@ test.it('should test shell output properties', async () => {
   assert.equal(shell.arrayBuffer() instanceof ArrayBuffer, true, "arrayBuffer");
   assert.equal(shell.blob() instanceof Blob, true, "blob");
   assert.equal(shell.bytes() instanceof Uint8Array, true, "bytes");
-  assert.notEqual(shell.json().devDependencies, undefined, "json");
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  assert.notEqual(shell.json<any>().devDependencies, undefined, "json");
 });
 
 test.it('cwd check', async () => {
